@@ -1,0 +1,34 @@
+# File Managed by Puppet
+dns_available yes
+bayes_ignore_header X-<%= mailscanner_org_name %>-BaruwaFW
+bayes_ignore_header X-<%= mailscanner_org_name %>-BaruwaFW-SpamCheck 
+bayes_ignore_header X-<%= mailscanner_org_name %>-BaruwaFW-SpamScore 
+bayes_ignore_header X-<%= mailscanner_org_name %>-BaruwaFW-Information
+lock_method flock
+ifplugin Mail::SpamAssassin::Plugin::DCC
+dcc_home /var/lib/dcc
+endif
+envelope_sender_header X-<%= mailscanner_org_name %>-BaruwaFW-From                                                                                
+header MS_FOUND_SPAMVIRUS exists:X-<%= mailscanner_org_name %>-BaruwaFW-SpamVirus-Report:
+score  MS_FOUND_SPAMVIRUS 3.0
+score BAYES_00 0.0
+score BAYES_05 1.0
+score BAYES_20 1.3
+score BAYES_40 1.5
+score BAYES_50 3.0
+score BAYES_60 3.2
+score BAYES_80 4.0
+score BAYES_95 10.0
+score BAYES_99 15.0
+score SPF_HELO_PASS -2.0
+score RAZOR2_CF_RANGE_51_100 2.5
+score RAZOR2_CF_RANGE_E8_51_100 3.5
+score RAZOR2_CHECK 2.5
+score DNS_FROM_OPENWHOIS 0.0
+score RCVD_IN_DSBL 0.0
+score RCVD_IN_SORBS_DUL 0.01
+score DKIM_VALID_AU -4.0
+score RCVD_BAD_ID 1.0
+score SUBJ_ALL_CAPS 1.0
+score URIBL_BLACK 3.0
+score RCVD_IN_BL_SPAMCOP_NET 2.0

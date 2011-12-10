@@ -1,0 +1,170 @@
+# File Managed by Puppet
+hide mysql_servers = <%= baruwa_mysql_host -%>/<%= baruwa_mysql_db -%>/<%= baruwa_mysql_user -%>/<%= baruwa_mysql_passwd %>
+#primary_hostname =
+domainlist local_domains = @ : localhost : localhost.localdomain 
+domainlist relay_sql_domains = mysql;select address from user_addresses where address_type=1 and enabled=1 and address='${quote_mysql:$domain}';
+hostlist   relay_from_hosts = localhost : localhost.localdomain
+acl_smtp_rcpt = acl_check_rcpt
+acl_smtp_data = acl_check_data
+acl_smtp_mime = acl_check_mime
+acl_smtp_connect = acl_check_connect
+acl_smtp_helo	= acl_check_helo
+#queue_only = true
+#queue_only_override = false
+smtp_banner = Baruwa MailFW Cluster $tod_full
+disable_ipv6 = true
+smtp_accept_max_per_connection = 60
+smtp_accept_max = 0
+smtp_load_reserve = 15
+pipelining_advertise_hosts = 127.0.0.1
+smtp_accept_max_nonmail = 30
+smtp_max_unknown_commands = 1
+spool_directory = /var/spool/exim.in
+process_log_path = /var/spool/exim/exim-process.info
+#log_file_path=:syslog
+#syslog_duplication=false
+#syslog_timestamp=false
+#log_selector = -rejected_header
+received_header_text = Received: ${if def:sender_rcvhost {from $sender_rcvhost\n\t}{${if def:sender_ident {from ${quote_local_part:$sender_ident} }}${if def:sender_helo_name {(helo=$sender_helo_name)\n\t}}}}by $primary_hostname ${if def:received_protocol {with $received_protocol}} ${if def:tls_cipher {($tls_cipher)\n\t}}(Exim $version_number)\n\t${if def:sender_address {(envelope-from <$sender_address>)\n\t}}id $message_exim_id${if !eq {$received_protocol}{split} { ret-id none;}{}}${if def:received_for {\n\tfor $received_for}}
+av_scanner = clamd:/var/run/clamav/clamd.sock
+tls_advertise_hosts = *
+tls_certificate = /etc/pki/tls/certs/exim.pem
+tls_privatekey = /etc/pki/tls/private/exim.pem
+daemon_smtp_ports = 25
+never_users = root
+rfc1413_hosts = *
+rfc1413_query_timeout = 0s
+ignore_bounce_errors_after = 1d
+timeout_frozen_after = 3d
+auth_advertise_hosts =
+begin acl
+acl_check_rcpt:
+  accept  hosts = :
+  drop message = Dictionary attack detected
+          hosts = :
+          condition = ${if >{$rcpt_fail_count}{3} {yes}{no}}
+          delay = 2m
+  drop  message = Legitimate bounces are never sent to more than one recipient.
+          senders = : postmaster@*
+          condition = ${if >{$recipients_count}{1}{true}{false}}
+  drop  message     = Message was delivered by ratware
+          log_message = remote host used IP address in HELO/EHLO greeting
+          condition   = ${if isip {$sender_helo_name}{true}{false}}
+  drop    message       = Restricted characters in address
+          domains       = +local_domains
+          local_parts   = ^[.] : ^.*[@%!/|]
+  drop    message       = Restricted characters in address
+          domains       = !+local_domains
+          local_parts   = ^[./|] : ^.*[@%!] : ^.*/\\.\\./
+  accept  local_parts   = postmaster
+          domains       = +local_domains
+  accept  hosts         = +relay_from_hosts
+          control       = submission
+  accept  authenticated = *
+          control       = submission
+  require message = relay not permitted
+          domains = +local_domains : +relay_sql_domains
+  require verify = recipient
+  drop    message       = REJECTED because $sender_host_address is in a black list spamhaus.org
+          dnslists      = zen.spamhaus.org
+  drop    message       = REJECTED because $sender_host_address is in a black list at $dnslist_domain\n$dnslist_text
+          dnslists      = bl.spamcop.net
+#  drop    message       = REJECTED because $sender_host_address is in a black list at $dnslist_domain\n$dnslist_text
+#          dnslists      = b.barracudacentral.org
+  drop  message   = REJECTED - We don't accept messages from hosts without reverse DNS
+          log_message = No reverse DNS
+          #domains = ! lsearch;/etc/exim/checks_exempt_hosts
+          !verify = reverse_host_lookup
+          !verify = sender/callout=2m,defer_ok
+          !condition =  ${if eq{$sender_verify_failure}{}}
+  drop  message  = REFUSED - no HELO/EHLO greeting
+          log_message = remote host did not present greeting
+          condition = ${if def:sender_helo_name {false}{true}} 
+  accept
+acl_check_data:
+  drop    malware    = *
+          message    = This message contains a virus ($malware_name).
+  accept
+acl_check_mime:
+  drop    message = Blacklisted file extension detected
+          condition = ${if match \
+                        {${lc:$mime_filename}} \
+                        {\N(\.exe|\.pif|\.bat|\.scr|\.lnk|\.com)$\N} \
+                     {1}{0}}
+  accept
+acl_check_connect:
+  drop    ratelimit = 250 / 15m / strict
+          message = You can only send $sender_rate per $sender_rate_period
+          log_message = RATE: $sender_rate/$sender_rate_period (max $sender_rate_limit)
+  accept
+acl_check_helo:
+  accept
+begin routers
+system_aliases:
+  driver = redirect
+  allow_fail
+  allow_defer
+  domains = @
+  data = ${lookup{$local_part}lsearch{/etc/aliases}}
+  file_transport = address_file
+  pipe_transport = address_pipe
+split:
+ driver = accept
+ domains = +relay_sql_domains
+ condition = ${if and {{!eq {$received_protocol}{split}}{gt {$recipients_count}{1}}}{yes}{no}}
+ transport = send_to_self
+ no_verify
+defer_router:
+ driver = redirect
+ allow_defer
+ data = :defer: queuing for scanning
+ no_verify
+deliver_clean:
+  driver = manualroute
+  domains = +relay_sql_domains
+  transport = remote_smtp
+  route_data = ${lookup mysql {select group_concat(concat(mail_hosts.address,\
+                 '::',mail_hosts.port) SEPARATOR ':') a from mail_hosts, \
+                 user_addresses where useraddress_id=user_addresses.id and \
+                 user_addresses.address = '${quote_mysql:$domain}' and \
+                 mail_hosts.enabled = 1 and user_addresses.enabled = 1}} 
+dnslookup:
+  driver = dnslookup
+  domains = ! +local_domains
+  transport = remote_smtp
+  ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
+  no_more
+localuser:
+  driver = accept
+  check_local_user
+  transport = local_delivery
+  cannot_route_message = Unknown user
+begin transports
+send_to_self:
+ driver = pipe
+ batch_max = 1
+ use_bsmtp
+ command = /usr/sbin/exim -oMr split -bS
+ user = exim
+remote_smtp:
+  driver = smtp
+local_delivery:
+  driver = appendfile
+  file = /var/mail/$local_part
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+  group = mail
+  mode = 0660
+address_pipe:
+  driver = pipe
+  return_output
+address_file:
+  driver = appendfile
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+begin retry
+*                      *           F,2h,15m; G,16h,1h,1.5; F,4d,6h
+begin rewrite
+begin authenticators

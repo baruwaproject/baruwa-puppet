@@ -1,0 +1,54 @@
+# File Managed by Puppet
+%org-name% = <%= mailscanner_org_name %>
+%org-long-name% = <%= mailscanner_org_long_name %>
+%web-site% = <%= baruwa_apache_vhost %>
+Incoming Queue Dir = <%= mailscanner_inqueue_dir %>
+Outgoing Queue Dir = <%= mailscanner_outqueue_dir %>
+MTA = exim
+Run As User = exim
+Run As Group = exim
+Sendmail = /usr/sbin/exim
+Sendmail2 = /usr/sbin/exim -C /etc/exim/exim_out.conf
+Incoming Work User = exim
+Incoming Work Group = clam
+Incoming Work Permissions = 0640
+Virus Scanning = no
+Virus Scanners = none
+Clamd Socket = /var/run/clamav/clamd.sock
+Dangerous Content Scanning = %rules-dir%/content.scanning.rules
+Filename Rules = %rules-dir%/filename.rules
+Filetype Rules = %rules-dir%/filetype.rules
+Quarantine User = <%= mailscanner_quarantine_user %>
+Quarantine Group = <%= mailscanner_quarantine_group %>
+Quarantine Permissions = 0660
+Quarantine Whole Message = yes
+Quarantine Whole Messages As Queue Files = no
+Detailed Spam Report = yes
+Include Scores In SpamAssassin Report = yes
+Always Looked Up Last = &BaruwaSQL
+Is Definitely Not Spam = &BaruwaWhitelist
+Is Definitely Spam = &BaruwaBlacklist
+Required SpamAssassin Score = &BaruwaLowScore
+High SpamAssassin Score = &BaruwaHighScore
+Spam Checks = &BaruwaShouldScan
+Mail Header = X-%org-name%-BaruwaFW:
+Spam Header = X-%org-name%-BaruwaFW-SpamCheck:
+Spam Score Header = X-%org-name%-BaruwaFW-SpamScore:
+Spam-Virus Header = X-%org-name%-BaruwaFW-SpamVirus-Report:
+Information Header = X-%org-name%-BaruwaFW-Information:
+Envelope From Header = X-%org-name%-BaruwaFW-From:
+Envelope To Header = X-%org-name%-BaruwaFW-To:
+ID Header = X-%org-name%-BaruwaFW-ID:
+IP Protocol Version Header = X-%org-name%-BaruwaFW-IP-Protocol:
+DB DSN = DBI:mysql:database=<%= baruwa_mysql_db -%>;host=<%= baruwa_mysql_host -%>;port=<%= baruwa_mysql_port %>
+DB Username = <%= baruwa_mysql_user %>
+DB Password = <%= baruwa_mysql_passwd %>
+SQL Serial Number =
+SQL Quick Peek =
+SQL Config =
+SQL Ruleset =
+SQL SpamAssassin Config =
+SQL Debug = no
+Spam Actions = <%= mailscanner_spam_action %>
+High Scoring Spam Actions = <%= mailscanner_high_spam_action %>
+Custom Functions Dir = /usr/share/baruwa/CustomFunctions

@@ -1,0 +1,4 @@
+# File Managed by Puppet
+FromOrTo:       *.blackberry.net        no
+From:           127.0.0.1      no
+FromOrTo:       default        yes  

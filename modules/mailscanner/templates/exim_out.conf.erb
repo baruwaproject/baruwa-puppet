@@ -1,0 +1,119 @@
+# File Managed by Puppet
+hide mysql_servers = <%= baruwa_mysql_host -%>/<%= baruwa_mysql_db -%>/<%= baruwa_mysql_user -%>/<%= baruwa_mysql_passwd %>
+#primary_hostname =
+domainlist local_domains = @ : localhost : localhost.localdomain
+domainlist relay_sql_rand_domains = mysql;select address from user_addresses where address_type=1 \
+                                    and enabled=1 and load_balance=1 and address='${quote_mysql:$domain}';
+domainlist relay_sql_nonrand_domains = mysql;select address from user_addresses where address_type=1 \
+                                       and enabled=1 and load_balance=0 and address='${quote_mysql:$domain}';
+hostlist   relay_from_hosts = 
+acl_smtp_rcpt = acl_check_rcpt
+acl_smtp_data = acl_check_data
+acl_smtp_mime = acl_check_mime
+acl_smtp_connect = acl_check_connect
+acl_smtp_helo	= acl_check_helo
+smtp_banner = Baruwa MailFW Cluster $tod_full
+disable_ipv6 = true
+smtp_load_reserve = 10
+tls_advertise_hosts = *
+tls_certificate = /etc/pki/tls/certs/exim.pem
+tls_privatekey = /etc/pki/tls/private/exim.pem
+daemon_smtp_ports = 25
+#log_file_path=:syslog
+#syslog_duplication=false
+#syslog_timestamp=false
+never_users = root
+rfc1413_hosts = *
+rfc1413_query_timeout = 0s
+ignore_bounce_errors_after = 1d
+timeout_frozen_after = 3d
+auth_advertise_hosts =
+begin acl
+acl_check_rcpt:
+  accept  hosts = :
+  deny    message       = Restricted characters in address
+          domains       = +local_domains
+          local_parts   = ^[.] : ^.*[@%!/|]
+  deny    message       = Restricted characters in address
+          domains       = !+local_domains
+          local_parts   = ^[./|] : ^.*[@%!] : ^.*/\\.\\./
+  accept  local_parts   = postmaster
+          domains       = +local_domains
+  require verify        = sender
+  accept  hosts         = +relay_from_hosts
+          control       = submission
+  accept  authenticated = *
+          control       = submission
+  require message = relay not permitted
+          domains = +local_domains : +relay_sql_domains
+  accept
+acl_check_data:
+  accept
+acl_check_mime:
+  accept
+acl_check_connect:
+  accept
+acl_check_helo:
+  accept
+begin routers
+deliver_clean_randomize:
+  driver = manualroute
+  domains = +relay_sql_rand_domains
+  transport = remote_smtp
+  hosts_randomize = true
+  route_data = ${lookup mysql {select group_concat(concat(mail_hosts.address,\
+                '::',mail_hosts.port) SEPARATOR ':') a from mail_hosts, \
+                user_addresses where useraddress_id=user_addresses.id and \
+                user_addresses.address = '${quote_mysql:$domain}' and \
+                mail_hosts.enabled = 1 and user_addresses.enabled = 1}} 
+deliver_clean_norandomized:
+  driver = manualroute
+  domains = +relay_sql_nonrand_domains
+  transport = remote_smtp
+  hosts_randomize = false
+  route_data = ${lookup mysql {select group_concat(concat(mail_hosts.address,\
+               '::',mail_hosts.port) SEPARATOR ':') a from mail_hosts, \
+               user_addresses where useraddress_id=user_addresses.id and \
+               user_addresses.address = '${quote_mysql:$domain}' and \
+               mail_hosts.enabled = 1 and user_addresses.enabled = 1}} 
+dnslookup:
+  driver = dnslookup
+  domains = ! +local_domains
+  transport = remote_smtp
+  ignore_target_hosts = 0.0.0.0 : 127.0.0.0/8
+  no_more
+system_aliases:
+  driver = redirect
+  allow_fail
+  allow_defer
+  data = ${lookup{$local_part}lsearch{/etc/aliases}}
+  file_transport = address_file
+  pipe_transport = address_pipe
+localuser:
+  driver = accept
+  check_local_user
+  transport = local_delivery
+  cannot_route_message = Unknown user
+begin transports
+remote_smtp:
+  driver = smtp
+local_delivery:
+  driver = appendfile
+  file = /var/mail/$local_part
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+  group = mail
+  mode = 0660
+address_pipe:
+  driver = pipe
+  return_output
+address_file:
+  driver = appendfile
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+begin retry
+*                      *           F,2h,15m; G,16h,1h,1.5; F,4d,6h
+begin rewrite
+begin authenticators

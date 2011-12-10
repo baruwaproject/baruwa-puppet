@@ -1,0 +1,26 @@
+# File Managed by Puppet
+<VirtualHost *:80>
+    # If running MySQL-python as .egg-package uncomment the setting below
+    SetEnv PYTHON_EGG_CACHE /var/tmp
+    Alias /favicon.ico /usr/lib/<%= baruwa_python_ver -%>/site-packages/baruwa/static/imgs/favicon.ico
+    Alias /static/ /usr/lib/<%= baruwa_python_ver -%>/site-packages/baruwa/static/
+    <Directory /usr/lib/<%= baruwa_python_ver -%>/site-packages/baruwa/static>
+        Options +FollowSymLinks
+        Order deny,allow
+        Allow from all
+    </Directory>
+    # change to your hostname
+    ServerName <%= baruwa_apache_vhost %>
+    <%if baruwa_apache_serveraliases.is_a? Array -%>
+    <% baruwa_apache_serveraliases.each do |name| -%><%= "  ServerAlias #{name}\n" %><% end -%>
+    <% elsif baruwa_apache_serveraliases != '' -%>
+    <%= "  ServerAlias #{baruwa_apache_serveraliases}" -%>
+    <% end %>
+    WSGIScriptAlias / /usr/lib/<%= baruwa_python_ver -%>/site-packages/baruwa/baruwa.wsgi
+    <Directory /usr/lib/<%= baruwa_python_ver -%>/site-packages/baruwa>
+        Order deny,allow
+        Allow from all
+    </Directory>
+    ErrorLog logs/baruwa-error_log
+    CustomLog logs/baruwa-access_log common
+</VirtualHost>
