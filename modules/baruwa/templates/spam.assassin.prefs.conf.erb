@@ -8,7 +8,7 @@ lock_method flock
 ifplugin Mail::SpamAssassin::Plugin::DCC
 dcc_home /var/lib/dcc
 endif
-envelope_sender_header X-<%= mailscanner_org_name %>-BaruwaFW-From                                                                                
+envelope_sender_header X-<%= mailscanner_org_name %>-BaruwaFW-From
 header MS_FOUND_SPAMVIRUS exists:X-<%= mailscanner_org_name %>-BaruwaFW-SpamVirus-Report:
 score  MS_FOUND_SPAMVIRUS 3.0
 score BAYES_00 0.0
