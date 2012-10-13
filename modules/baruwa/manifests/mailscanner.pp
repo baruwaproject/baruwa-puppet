@@ -36,9 +36,9 @@ class baruwa::mailscanner inherits mailscanner::exim {
         require => [Class["spamassassin"], Class["baruwa::bayessql"]],
     }
 
-    file { "/etc/mail/spamassassin/spam.assassin.prefs.conf":
+    file { "/etc/mail/spamassassin/spam.assassin.prefs.cf":
         target  => "/etc/MailScanner/spam.assassin.prefs.conf",
-        require => [Package["mailscanner"], Package["spamassassin"]],
+        require => [Package["spamassassin"], File["/etc/MailScanner/spam.assassin.prefs.conf"]],
         ensure  => link,
     }
 
