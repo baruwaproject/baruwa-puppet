@@ -24,10 +24,9 @@
 #
 #
 class mailscanner::samodules {
-    package { ["perl-Mail-SPF", "perl-Mail-SPF-Query", "perl-Encode-Detect",
+    package { ["perl-Mail-SPF-Query", "perl-Encode-Detect", "perl-Mail-DKIM",
                 "perl-IO-String", "perl-Pod-Escapes", "perl-Pod-Simple",
-                "perl-Net-DNS-Resolver-Programmable", "perl-Parse-RecDescent",
-                "perl-Mail-DKIM"]:
+                "perl-Net-DNS-Resolver-Programmable", "perl-Parse-RecDescent",]:
         ensure => installed,
     }
 }
