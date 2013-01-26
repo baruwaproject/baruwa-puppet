@@ -30,6 +30,7 @@ replicate-do-db=bayes
 replicate-do-db=baruwa
 auto_increment_increment=<%= baruwa_mysql_repl_increment %>
 auto_increment_offset=<%= baruwa_mysql_repl_offset %>
+binlog_format=mixed
 log-bin = /var/lib/mysql/bin.log
 relay-log = /var/lib/mysql/slave-relay.log
 relay-log-index = /var/lib/mysql/slave-relay-log.index
