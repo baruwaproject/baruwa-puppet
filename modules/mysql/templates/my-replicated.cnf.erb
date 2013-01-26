@@ -1,0 +1,40 @@
+# File Managed by Puppet
+[client]
+default-character-set = utf8
+
+[mysqld]
+#skip-bdb
+#skip-networking
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+user=mysql
+table_cache=256
+query_cache_type=1
+query_cache_size=12M
+query_cache_limit=128M
+thread_cache_size=4
+old_passwords=1
+character-set-server=utf8
+collation-server=utf8_unicode_ci
+init_connect='set collation_connection = utf8_unicode_ci;'
+max_allowed_packet=128M
+server-id=<%= baruwa_mysql_id %>
+master-host=<%= baruwa_mysql_peer %>
+master-user=<%= baruwa_mysql_repl_user %>
+master-password=<%= baruwa_mysql_repl_pw %>
+master-port=3306
+log-bin
+binlog-do-db=bayes
+binlog-do-db=baruwa
+replicate-do-db=bayes
+replicate-do-db=baruwa
+auto_increment_increment=<%= baruwa_mysql_repl_increment %>
+auto_increment_offset=<%= baruwa_mysql_repl_offset %>
+log-bin = /var/lib/mysql/bin.log
+relay-log = /var/lib/mysql/slave-relay.log
+relay-log-index = /var/lib/mysql/slave-relay-log.index
+
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid

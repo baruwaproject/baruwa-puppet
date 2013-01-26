@@ -32,6 +32,9 @@ class baruwa::setup inherits baruwa {
     include baruwa::mailscanner
     include dcc::spamassassin
     include mailscanner::enable
+    if $baruwa_mysql_repl == 'true' {
+        include baruwa::mysqlrepl
+    }
 
     file { "/etc/rabbitmq/rabbitmq.config":
           require   => Service[rabbitmq],

@@ -47,7 +47,10 @@ class mysql {
         owner   => "${mysql::params::configfile_owner}",
         group   => "${mysql::params::configfile_group}",
         ensure  => present,
-        content => template("mysql/my.cnf.erb"),
+        content => $baruwa_mysql_repl ? {
+           /(?i:true)/ => template("mysql/my-replicated.cnf.erb"),
+           default => template("mysql/my.cnf.erb"),
+        },
         require => Package["mysql"],
         notify  => Service["mysql"],
     }
