@@ -31,7 +31,7 @@
 define mysql::repl($pass, $adminuser, $adminpasswd, $host) {
     include mysql
     exec { "repl-grant-${name}":
-        unless  => "mysql -u${user} -p${adminpasswd} mysql -e \"SELECT user FROM user WHERE user='${name}';\"|grep ${name}",
+        unless  => "mysql -p${adminpasswd} mysql -e \"SELECT user FROM user WHERE user='${name}';\"|grep ${name}",
         command => "mysql -u${adminuser} -p${adminpasswd} -e \"GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO ${name}@'${host}' IDENTIFIED BY '${pass}';FLUSH PRIVILEGES;\"",
         require => Class["mysql::passwd"],
     }
