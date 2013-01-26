@@ -26,10 +26,14 @@
 class baruwa {
     require baruwa::params
     include apache::modwsgi
-    package { baruwa:
+    package {"baruwa":
         name    => "${baruwa::params::packagename}",
         ensure  => installed,
-        require => Package[mod_wsgi]
+        require => Package[mod_wsgi, django-picklefield]
+    }
+
+    package { "django-picklefield":
+        ensure => installed,
     }
 
     service{ baruwa:
