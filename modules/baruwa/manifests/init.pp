@@ -32,7 +32,7 @@ class baruwa {
         require => Package[mod_wsgi, django-picklefield]
     }
 
-    package { "django-picklefield":
+    package { ["django-picklefield", "python-amqplib"]:
         ensure => installed,
     }
 
