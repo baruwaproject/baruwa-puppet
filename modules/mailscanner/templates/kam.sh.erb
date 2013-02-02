@@ -27,7 +27,7 @@ if [ "$?" = "0" ]; then
   echo It completed okay.
   if [ -r KAM.cf.backup ]; then
     if [ KAM.cf -nt KAM.cf.backup ]; then
-      if ( tail -10 KAM.cf | grep -q '^#.*EOF' ); then
+      if ( tail -10 KAM.cf | grep -qE '^#.*(EOF|END)' ); then
         echo It succeeded, so make a backup
         cp -f KAM.cf KAM.cf.backup
       else
@@ -40,7 +40,7 @@ if [ "$?" = "0" ]; then
     fi
   else
     # No backup file present, so delete file if it is bad
-    if ( tail -10 KAM.cf | grep -q '^#.*EOF' ); then
+    if ( tail -10 KAM.cf | grep -qE '^#.*(EOF|END)' ); then
       echo Success, make a backup
       cp -f KAM.cf KAM.cf.backup
     else
